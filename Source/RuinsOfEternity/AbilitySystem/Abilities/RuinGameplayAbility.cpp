@@ -1,4 +1,4 @@
-// // Copyright (C) 2023 Thyke. All Rights Reserved.
+// // Copyright (C) 2024 Thyke. All Rights Reserved.
 
 
 #include "AbilitySystem/Abilities/RuinGameplayAbility.h"
