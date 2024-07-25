@@ -14,4 +14,7 @@ class RUINSOFETERNITY_API URuinCharacterMovementComponent : public UCharacterMov
 {
 	GENERATED_BODY()
 	
+public:
+
+	URuinCharacterMovementComponent();
 };

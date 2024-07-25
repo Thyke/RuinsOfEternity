@@ -4,26 +4,42 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "AbilitySystemInterface.h"
+#include "GameplayTagContainer.h"
 #include "RuinCharacter.generated.h"
 
+class URuinAbilitySystemComponent;
+class URuinHealthComponent;
+class URuinCharacterMovementComponent;
+
 UCLASS()
-class RUINSOFETERNITY_API ARuinCharacter : public ACharacter
+class RUINSOFETERNITY_API ARuinCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
-	ARuinCharacter();
+	ARuinCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
+	UPROPERTY(BlueprintReadOnly, Category = "Ruin|Character")
+	TObjectPtr<URuinCharacterMovementComponent> RuinCharacterMovement;
+
+	UFUNCTION(BlueprintCallable, Category = "Ruin|Character")
+	URuinAbilitySystemComponent* GetRuinAbilitySystemComponent() const;
+
+	//AbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ruin|Components")
+	TObjectPtr<URuinAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ruin|Components")
+	TObjectPtr<URuinHealthComponent> HealthComponent;
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+
 public:	
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	virtual void PostInitializeComponents() override;
 };
