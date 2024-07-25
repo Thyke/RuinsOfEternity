@@ -38,7 +38,6 @@ public class RuinsOfEternity : ModuleRules
             "Slate",
             "SlateCore",
             "UMG",
-            "GameplayMessageRuntime",
             "AnimationLocomotionLibraryRuntime",
             });
         // Uncomment if you are using Slate UI
