@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AbilitySystem/RuinAbilitySystemComponent.h"
+#include "RuinGameplayTags.h"
 
 ARuinCharacter::ARuinCharacter(const FObjectInitializer& ObjectInitializer) : Super{
 	ObjectInitializer.SetDefaultSubobjectClass<URuinCharacterMovementComponent>(CharacterMovementComponentName)
@@ -68,3 +69,33 @@ void ARuinCharacter::PostInitializeComponents()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 }
 
+void ARuinCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+
+	URuinCharacterMovementComponent* RuinMoveComp = CastChecked<URuinCharacterMovementComponent>(GetCharacterMovement());
+
+	SetMovementModeTag(PrevMovementMode, PreviousCustomMode, false);
+	SetMovementModeTag(RuinMoveComp->MovementMode, RuinMoveComp->CustomMovementMode, true);
+}
+
+void ARuinCharacter::SetMovementModeTag(EMovementMode MovementMode, uint8 CustomMovementMode, bool bTagEnabled)
+{
+	if (URuinAbilitySystemComponent* RuinASC = GetRuinAbilitySystemComponent())
+	{
+		const FGameplayTag* MovementModeTag = nullptr;
+		if (MovementMode == MOVE_Custom)
+		{
+			MovementModeTag = RuinGameplayTags::CustomMovementModeTagMap.Find(CustomMovementMode);
+		}
+		else
+		{
+			MovementModeTag = RuinGameplayTags::MovementModeTagMap.Find(MovementMode);
+		}
+
+		if (MovementModeTag && MovementModeTag->IsValid())
+		{
+			RuinASC->SetLooseGameplayTagCount(*MovementModeTag, (bTagEnabled ? 1 : 0));
+		}
+	}
+}
