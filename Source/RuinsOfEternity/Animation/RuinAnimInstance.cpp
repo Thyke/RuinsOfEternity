@@ -5,7 +5,7 @@
 #include "AbilitySystemGlobals.h"
 #include "Character/RuinCharacter.h"
 #include "Components/RuinCharacterMovementComponent.h"
-
+#include "Animation/Nodes/RuinAnimNode_GameplayTagsBlend.h"
 #if WITH_EDITOR
 #include "Misc/DataValidation.h"
 #endif
@@ -22,6 +22,7 @@ void URuinAnimInstance::InitializeAbilitySystem(UAbilitySystemComponent* ASC)
 	check(ASC);
 
 	GameplayTagPropertyMap.Initialize(this, ASC);
+	AbilitySystemComponent = ASC;
 }
 
 

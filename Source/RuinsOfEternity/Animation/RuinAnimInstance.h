@@ -19,7 +19,8 @@ public:
 	URuinAnimInstance(const FObjectInitializer& ObjectInitializer);
 
 	virtual void InitializeAbilitySystem(UAbilitySystemComponent* ASC);
-
+	UPROPERTY()
+	UAbilitySystemComponent* AbilitySystemComponent;
 protected:
 
 #if WITH_EDITOR

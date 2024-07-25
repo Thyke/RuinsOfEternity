@@ -12,7 +12,17 @@
 				"Engine",
 				"GameplayAbilities",
 				"AIModule",
-				"EnhancedInput"
+				"EnhancedInput",
+				"AnimGraph"
+			]
+		},
+		{
+			"Name": "RuinsOfEternityEditor",
+			"Type": "UncookedOnly",
+			"LoadingPhase": "PreDefault",
+			"AdditionalDependencies": [
+				"AnimGraph",
+				"Engine"
 			]
 		}
 	],
