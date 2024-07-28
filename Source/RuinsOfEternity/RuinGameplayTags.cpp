@@ -11,7 +11,7 @@ namespace RuinGameplayTags
 	//Jump Ability
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Ability_Type_Action_Jump, "Ability.Type.Action.Jump", "Jump Ability Tag");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(Event_Ability_Jump, "Event.Ability.Jump", "Jump Ability Owned Tag");
-
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(InputTag_Ability_Jump, "InputTag.Ability.Jump", "Jump Ability input.");
 	//Gameplay Events
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(GameplayEvent_OnLanded, "GameplayEvent.OnLanded", "Landed Event");
 

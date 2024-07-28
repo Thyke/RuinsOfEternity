@@ -6,18 +6,16 @@
 
 URuinAttributeSet::URuinAttributeSet()
 {
-	MaximumHealth = 0.0f;
-	CurrentHealth = 0.0f;
-	HealthRegeneration = 0.0f;
+
 }
 
 void URuinAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	if (Attribute == GetMaximumHealthAttribute())
+	if (Attribute == GetMaxHealthAttribute())
 	{
-		AdjustAttributeForMaxChange(CurrentHealth, MaximumHealth, NewValue, GetCurrentHealthAttribute());
+		AdjustAttributeForMaxChange(Health, MaxHealth, NewValue, GetHealthAttribute());
 	}
 }
 
@@ -25,45 +23,40 @@ void URuinAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallba
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	if (Data.EvaluatedData.Attribute == GetDamageAttribute())
+	//if (Data.EvaluatedData.Attribute == GetDamageAttribute())
+	//{
+	//	// Store a local copy of the amount of Damage done and clear the Damage attribute.
+	//	const float LocalDamageDone = GetDamage();
+
+	//	SetDamage(0.f);
+
+	//	if (LocalDamageDone > 0.0f)
+	//	{
+	//		// Apply the Health change and then clamp it.
+	//		const float NewHealth = GetCurrentHealth() - LocalDamageDone;
+
+	//		SetCurrentHealth(FMath::Clamp(NewHealth, 0.0f, GetMaximumHealth()));
+	//	}
+	//}
+
+	//else if (Data.EvaluatedData.Attribute == GetHealingAttribute())
+	//{
+	//	// Store a local copy of the amount of Healing done and clear the Healing attribute.
+	//	const float LocalHealingDone = GetHealing();
+
+	//	SetHealing(0.f);
+
+	//	if (LocalHealingDone > 0.0f)
+	//	{
+	//		// Apply the Health change and then clamp it.
+	//		const float NewHealth = GetCurrentHealth() + LocalHealingDone;
+
+	//		SetCurrentHealth(FMath::Clamp(NewHealth, 0.0f, GetMaximumHealth()));
+	//	}
+	//}
+
+	/*else*/ if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		// Store a local copy of the amount of Damage done and clear the Damage attribute.
-		const float LocalDamageDone = GetDamage();
-
-		SetDamage(0.f);
-
-		if (LocalDamageDone > 0.0f)
-		{
-			// Apply the Health change and then clamp it.
-			const float NewHealth = GetCurrentHealth() - LocalDamageDone;
-
-			SetCurrentHealth(FMath::Clamp(NewHealth, 0.0f, GetMaximumHealth()));
-		}
-	}
-
-	else if (Data.EvaluatedData.Attribute == GetHealingAttribute())
-	{
-		// Store a local copy of the amount of Healing done and clear the Healing attribute.
-		const float LocalHealingDone = GetHealing();
-
-		SetHealing(0.f);
-
-		if (LocalHealingDone > 0.0f)
-		{
-			// Apply the Health change and then clamp it.
-			const float NewHealth = GetCurrentHealth() + LocalHealingDone;
-
-			SetCurrentHealth(FMath::Clamp(NewHealth, 0.0f, GetMaximumHealth()));
-		}
-	}
-
-	else if (Data.EvaluatedData.Attribute == GetCurrentHealthAttribute())
-	{
-		SetCurrentHealth(FMath::Clamp(GetCurrentHealth(), 0.0f, GetMaximumHealth()));
-	}
-
-	else if (Data.EvaluatedData.Attribute == GetHealthRegenerationAttribute())
-	{
-		SetHealthRegeneration(FMath::Clamp(GetHealthRegeneration(), 0.0f, GetMaximumHealth()));
+		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 	}
 }

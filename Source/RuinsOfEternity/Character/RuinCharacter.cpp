@@ -7,6 +7,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "AbilitySystem/RuinAbilitySystemComponent.h"
+#include "AbilitySystem/Attributes/RuinAttributeSet.h"
 #include "RuinGameplayTags.h"
 
 ARuinCharacter::ARuinCharacter(const FObjectInitializer& ObjectInitializer) : Super{
@@ -19,6 +20,8 @@ ARuinCharacter::ARuinCharacter(const FObjectInitializer& ObjectInitializer) : Su
 	AbilitySystemComponent->SetIsReplicated(false);
 
 	HealthComponent = CreateDefaultSubobject<URuinHealthComponent>(TEXT("HealthComponent"));
+
+	AttributeSet = CreateDefaultSubobject<URuinAttributeSet>(TEXT("AttributeSet"));
 
 	GetCapsuleComponent()->InitCapsuleSize(30.0f, 90.0f);
 

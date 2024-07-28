@@ -22,28 +22,19 @@ public:
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
-	// Used to create a local copy of Damage which is then subtracted from Current Health.
-	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set", meta = (HideFromLevelInfos))
-	FGameplayAttributeData Damage;
-	ATTRIBUTE_ACCESSORS(URuinAttributeSet, Damage)
-
-		// Used to create a local copy of Healing which is then added to Current Health.
-	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set", meta = (HideFromLevelInfos))
-	FGameplayAttributeData Healing;
-	ATTRIBUTE_ACCESSORS(URuinAttributeSet, Healing)
-
-		// Holds the current value for Health.
 	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set")
-	FGameplayAttributeData CurrentHealth;
-	ATTRIBUTE_ACCESSORS(URuinAttributeSet, CurrentHealth)
+	FGameplayAttributeData Health;
+	ATTRIBUTE_ACCESSORS(URuinAttributeSet, Health)
 
-		// Holds the value for Maximum Health.
 	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set")
-	FGameplayAttributeData MaximumHealth;
-	ATTRIBUTE_ACCESSORS(URuinAttributeSet, MaximumHealth)
+	FGameplayAttributeData MaxHealth;
+	ATTRIBUTE_ACCESSORS(URuinAttributeSet, MaxHealth)
 
-		// Holds the value for Health Regeneration.
 	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set")
-	FGameplayAttributeData HealthRegeneration;
-	ATTRIBUTE_ACCESSORS(URuinAttributeSet, HealthRegeneration)
+	FGameplayAttributeData Stamina;
+	ATTRIBUTE_ACCESSORS(URuinAttributeSet, Stamina)
+
+	UPROPERTY(BlueprintReadOnly, Category = "Ruin Attribute Set")
+	FGameplayAttributeData MaxStamina;
+	ATTRIBUTE_ACCESSORS(URuinAttributeSet, MaxStamina)
 };

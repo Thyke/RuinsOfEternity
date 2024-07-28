@@ -11,6 +11,7 @@
 class URuinAbilitySystemComponent;
 class URuinHealthComponent;
 class URuinCharacterMovementComponent;
+class URuinAttributeSet;
 
 UCLASS()
 class RUINSOFETERNITY_API ARuinCharacter : public ACharacter, public IAbilitySystemInterface
@@ -34,6 +35,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ruin|Components")
 	TObjectPtr<URuinHealthComponent> HealthComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ruin|Attributes")
+	TObjectPtr<URuinAttributeSet> AttributeSet;
 protected:
 	virtual void BeginPlay() override;
 

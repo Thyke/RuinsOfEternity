@@ -12,3 +12,8 @@ URuinGameplayAbility::URuinGameplayAbility(const FObjectInitializer& ObjectIniti
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 	NetSecurityPolicy = EGameplayAbilityNetSecurityPolicy::ServerOnly;
 }
+
+void URuinGameplayAbility::OnPawnAvatarSet()
+{
+	K2_OnPawnAvatarSet();
+}

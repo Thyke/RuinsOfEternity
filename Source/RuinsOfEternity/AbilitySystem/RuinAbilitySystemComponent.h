@@ -11,46 +11,40 @@
 class UAttributeSet;
 class UGameplayAbility;
 class UGameplayEffect;
+class URuinGameplayAbility;
 
-// Contains data used to initialize an Ability System Component.
 USTRUCT(BlueprintType)
-struct FAbilitySystemInitializationData
+struct FRuinAbilityInputMapping
 {
 	GENERATED_BODY()
 
-	// An array of Attribute Sets to create.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	TArray<TSubclassOf<UAttributeSet>> AttributeSets;
+public:
 
-	// A map of Attributes / float used to set base values.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	TMap<FGameplayAttribute, float> AttributeBaseValues;
+	// Gameplay ability to grant.
+	UPROPERTY(EditDefaultsOnly)
+	TSubclassOf<URuinGameplayAbility> Ability = nullptr;
 
-	// An Array of Gameplay Abilities to give.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	TArray<TSubclassOf<UGameplayAbility>> GameplayAbilities;
+	// Level of ability to grant.
+	UPROPERTY(EditDefaultsOnly)
+	int32 AbilityLevel = 1;
 
-	// An array of Gameplay Effects to apply.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	TArray<TSubclassOf<UGameplayEffect>> GameplayEffects;
-
-	// A container of GameplayTags to apply.
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-	FGameplayTagContainer GameplayTags;
+	// Tag used to process input for the ability.
+	UPROPERTY(EditDefaultsOnly, Meta = (Categories = "InputTag"))
+	FGameplayTag InputTag;
 };
 
-// Returns the value of an Attribute based on the search type.
-UENUM(BlueprintType)
-enum class EAttributeSearchType : uint8
+USTRUCT(BlueprintType)
+struct FRuinAttributeSetDefinition
 {
-	// Returns the final value of the Attribute including all stateful Gameplay Effect modifiers.
-	FinalValue,
+	GENERATED_BODY()
 
-	// Returns the base value of the Attribute. (Excludes duration based Gameplay Effect modifiers)
-	BaseValue,
+	/** Attribute Set to grant */
+	UPROPERTY(EditAnywhere, Category = Attributes)
+	TSubclassOf<UAttributeSet> AttributeSet;
 
-	// Returns the Final Value minus the Base Value.
-	BonusValue
+	/** Data table reference to initialize the attributes with, if any (can be left unset) */
+	UPROPERTY(EditAnywhere, Category = Attributes, meta = (RequiredAssetDataTags = "RowStructure=/Script/GameplayAbilities.AttributeMetaData"))
+	TObjectPtr<UDataTable> InitializationData = nullptr;
 };
 
 UCLASS()
@@ -60,19 +54,42 @@ class RUINSOFETERNITY_API URuinAbilitySystemComponent : public UAbilitySystemCom
 	
 public:
 
-	UPROPERTY(BlueprintReadOnly, EditAnywhere, Category = "Ability System", Meta = (ShowOnlyInnerProperties))
-	FAbilitySystemInitializationData AbilitySystemInitializationData;
-
-	// Called to initialize an Ability System Component with the supplied data. (Can be found in "AbilitySystemData.h")
-	// Call this on the Server and Client to properly init references / values.
-	UFUNCTION(BlueprintCallable)
-	void InitializeAbilitySystemData(AActor* InOwningActor, AActor* InAvatarActor);
-
-	// Wrapper for the "GetOrCreateAttributeSubobject" function. Returns the specified Attribute Set / creates one if it isn't found.
-	const UAttributeSet* GetOrCreateAttributeSet(const TSubclassOf<UAttributeSet>& InAttributeSet);
-
+	URuinAbilitySystemComponent(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	virtual void InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor) override;
-protected:
 
-	bool AbilitySystemDataInitialized = false;
+
+
+	//Startup
+	virtual void GrantDefaultAbilitiesAndAttributes(AActor* InOwnerActor, AActor* InAvatarActor, UObject* SourceObject);
+	void GrantStartupEffects();
+
+	void AbilityInputTagPressed(const FGameplayTag& InputTag);
+	void AbilityInputTagReleased(const FGameplayTag& InputTag);
+
+	void ProcessAbilityInput(float DeltaTime, bool bGamePaused);
+	void ClearAbilityInput();
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ruin|Abilities")
+	TArray<FRuinAbilityInputMapping> GrantedAbilities;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ruin|Effects")
+	TArray<TSubclassOf<UGameplayEffect>> GrantedEffects;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Ruin|Attributes")
+	TArray<FRuinAttributeSetDefinition> GrantedAttributes;
+
+protected:
+	virtual void BeginPlay() override;
+
+	// Handles to abilities that had their input pressed this frame.
+	TArray<FGameplayAbilitySpecHandle> InputPressedSpecHandles;
+
+	// Handles to abilities that had their input released this frame.
+	TArray<FGameplayAbilitySpecHandle> InputReleasedSpecHandles;
+
+	// Handles to abilities that have their input held.
+	TArray<FGameplayAbilitySpecHandle> InputHeldSpecHandles;
+
+	UPROPERTY(transient)
+	TArray<FActiveGameplayEffectHandle> AddedEffects;
 };

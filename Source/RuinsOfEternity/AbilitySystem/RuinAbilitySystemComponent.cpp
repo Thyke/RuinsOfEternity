@@ -2,87 +2,261 @@
 
 
 #include "AbilitySystem/RuinAbilitySystemComponent.h"
+#include "Abilities/RuinGameplayAbility.h"
 
-void URuinAbilitySystemComponent::InitializeAbilitySystemData(AActor* InOwningActor, AActor* InAvatarActor)
+
+#include UE_INLINE_GENERATED_CPP_BY_NAME(RuinAbilitySystemComponent)
+
+URuinAbilitySystemComponent::URuinAbilitySystemComponent(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
-	if (AbilitySystemDataInitialized)
+	InputPressedSpecHandles.Reset();
+	InputReleasedSpecHandles.Reset();
+	InputHeldSpecHandles.Reset();
+}
+
+void URuinAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
+{
+	FGameplayAbilityActorInfo* ActorInfo = AbilityActorInfo.Get();
+	check(ActorInfo);
+	check(InOwnerActor);
+
+	const bool bHasNewPawnAvatar = Cast<APawn>(InAvatarActor) && (InAvatarActor != ActorInfo->AvatarActor);
+	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
+
+	if (bHasNewPawnAvatar)
 	{
+		for (const FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			URuinGameplayAbility* RuinAbilityCDO = Cast<URuinGameplayAbility>(AbilitySpec.Ability);
+			if (!RuinAbilityCDO)
+			{
+				continue;
+			}
+
+			if (RuinAbilityCDO->GetInstancingPolicy() != EGameplayAbilityInstancingPolicy::NonInstanced)
+			{
+				TArray<UGameplayAbility*> Instances = AbilitySpec.GetAbilityInstances();
+				for (UGameplayAbility* AbilityInstance : Instances)
+				{
+					URuinGameplayAbility* RuinAbilityInstance = Cast<URuinGameplayAbility>(AbilityInstance);
+					if (RuinAbilityInstance)
+					{
+						RuinAbilityInstance->OnPawnAvatarSet();
+					}
+				}
+			}
+			else
+			{
+				RuinAbilityCDO->OnPawnAvatarSet();
+			}
+		}
+
+		GrantDefaultAbilitiesAndAttributes(InOwnerActor, InAvatarActor, this);
+	}
+}
+
+
+void URuinAbilitySystemComponent::GrantDefaultAbilitiesAndAttributes(AActor* InOwnerActor, AActor* InAvatarActor, UObject* SourceObject)
+{
+	UE_LOG(LogTemp, Verbose, TEXT("Owner: %s, Avatar: %s"), *GetNameSafe(InOwnerActor), *GetNameSafe(InAvatarActor));
+
+	if (!InOwnerActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("InOwnerActor is null."));
 		return;
 	}
 
-	AbilitySystemDataInitialized = true;
-
-	// Set the Owning Actor and Avatar Actor. (Used throughout the Gameplay Ability System to get references etc.)
-	InitAbilityActorInfo(InOwningActor, InAvatarActor);
-
-	// Check to see if we have authority. (Attribute Sets / Attribute Base Values / Gameplay Abilities / Gameplay Effects should only be added -or- set on authority and will be replicated to the client automatically.)
-	if (GetOwnerActor()->HasAuthority())
+	for (int32 Index = 0; Index < GrantedAbilities.Num(); ++Index)
 	{
-		// Grant Attribute Sets if the array isn't empty.
-		if (!AbilitySystemInitializationData.AttributeSets.IsEmpty())
+		const FRuinAbilityInputMapping& AbilityToGrant = GrantedAbilities[Index];
+		if (!IsValid(AbilityToGrant.Ability))
 		{
-			for (const TSubclassOf<UAttributeSet> AttributeSetClass : AbilitySystemInitializationData.AttributeSets)
-			{
-				GetOrCreateAttributeSet(AttributeSetClass);
-			}
+			UE_LOG(LogTemp, Error, TEXT("Invalid ability to grant at index: [%d]."), Index);
+			continue;
 		}
 
-		// Set base attribute values if the map isn't empty.
-		if (!AbilitySystemInitializationData.AttributeBaseValues.IsEmpty())
+		URuinGameplayAbility* AbilityCDO = AbilityToGrant.Ability->GetDefaultObject<URuinGameplayAbility>();
+		FGameplayAbilitySpec AbilitySpec(AbilityCDO, AbilityToGrant.AbilityLevel, INDEX_NONE, SourceObject);
+		AbilitySpec.DynamicAbilityTags.AddTag(AbilityToGrant.InputTag);
+
+		FGameplayAbilitySpecHandle AbilitySpecHandle = GiveAbility(AbilitySpec);
+		if (!AbilitySpecHandle.IsValid())
 		{
-			for (const TTuple<FGameplayAttribute, float>& AttributeBaseValue : AbilitySystemInitializationData.AttributeBaseValues)
+			UE_LOG(LogTemp, Warning, TEXT("Failed to grant ability: %s"), *AbilityToGrant.Ability->GetName());
+		}
+	}
+
+	for (const FRuinAttributeSetDefinition& AttributeSetDefinition : GrantedAttributes)
+	{
+		if (!AttributeSetDefinition.AttributeSet)
+		{
+			continue;
+		}
+
+		const bool bHasAttributeSet = GetAttributeSubobject(AttributeSetDefinition.AttributeSet) != nullptr;
+		UE_LOG(LogTemp, Verbose, TEXT("HasAttributeSet: %s (%s)"), bHasAttributeSet ? TEXT("true") : TEXT("false"), *GetNameSafe(AttributeSetDefinition.AttributeSet));
+
+		if (!bHasAttributeSet)
+		{
+			UAttributeSet* AttributeSet = NewObject<UAttributeSet>(InOwnerActor, AttributeSetDefinition.AttributeSet);
+			if (AttributeSetDefinition.InitializationData)
 			{
-				if (HasAttributeSetForAttribute(AttributeBaseValue.Key))
+				AttributeSet->InitFromMetaDataTable(AttributeSetDefinition.InitializationData);
+			}
+			AddAttributeSetSubobject(AttributeSet);
+		}
+	}
+}
+
+void URuinAbilitySystemComponent::GrantStartupEffects()
+{
+	for (const FActiveGameplayEffectHandle AddedEffect : AddedEffects)
+	{
+		RemoveActiveGameplayEffect(AddedEffect);
+	}
+
+	FGameplayEffectContextHandle EffectContext = MakeEffectContext();
+	EffectContext.AddSourceObject(this);
+
+	AddedEffects.Empty(GrantedEffects.Num());
+
+	for (const TSubclassOf<UGameplayEffect> GameplayEffect : GrantedEffects)
+	{
+		FGameplayEffectSpecHandle NewHandle = MakeOutgoingSpec(GameplayEffect, 1, EffectContext);
+		if (NewHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle EffectHandle = ApplyGameplayEffectSpecToTarget(*NewHandle.Data.Get(), this);
+			AddedEffects.Add(EffectHandle);
+		}
+	}
+}
+
+void URuinAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& InputTag)
+{
+	UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed called with InputTag: %s"), *InputTag.ToString());
+
+	if (InputTag.IsValid())
+	{
+		for (const FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
+			{
+				UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
+				InputPressedSpecHandles.AddUnique(AbilitySpec.Handle);
+				InputHeldSpecHandles.AddUnique(AbilitySpec.Handle);
+			}
+		}
+	}
+}
+
+void URuinAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& InputTag)
+{
+	UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased called with InputTag: %s"), *InputTag.ToString());
+
+	if (InputTag.IsValid())
+	{
+		for (const FGameplayAbilitySpec& AbilitySpec : ActivatableAbilities.Items)
+		{
+			if (AbilitySpec.Ability && AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
+			{
+				UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
+				InputReleasedSpecHandles.AddUnique(AbilitySpec.Handle);
+				InputHeldSpecHandles.Remove(AbilitySpec.Handle);
+			}
+		}
+	}
+}
+
+void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGamePaused)
+{
+	//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput called with DeltaTime: %f, bGamePaused: %d"), DeltaTime, bGamePaused);
+
+	static TArray<FGameplayAbilitySpecHandle> AbilitiesToActivate;
+	AbilitiesToActivate.Reset();
+
+	for (const FGameplayAbilitySpecHandle& SpecHandle : InputHeldSpecHandles)
+	{
+		if (const FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromHandle(SpecHandle))
+		{
+			if (AbilitySpec->Ability && !AbilitySpec->IsActive())
+			{
+				const URuinGameplayAbility* RuinAbilityCDO = Cast<URuinGameplayAbility>(AbilitySpec->Ability);
+				if (RuinAbilityCDO && RuinAbilityCDO->GetActivationPolicy() == ERuinAbilityActivationPolicy::WhileInputActive)
 				{
-					SetNumericAttributeBase(AttributeBaseValue.Key, AttributeBaseValue.Value);
+					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate"), *AbilitySpec->Handle.ToString());
+					AbilitiesToActivate.AddUnique(AbilitySpec->Handle);
 				}
 			}
 		}
+	}
 
-		// Grant Gameplay Abilities if the array isn't empty.
-		if (!AbilitySystemInitializationData.GameplayAbilities.IsEmpty())
+	for (const FGameplayAbilitySpecHandle& SpecHandle : InputPressedSpecHandles)
+	{
+		if (FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromHandle(SpecHandle))
 		{
-			for (const TSubclassOf<UGameplayAbility> GameplayAbility : AbilitySystemInitializationData.GameplayAbilities)
+			if (AbilitySpec->Ability)
 			{
-				FGameplayAbilitySpec AbilitySpec = FGameplayAbilitySpec(GameplayAbility, 1, INDEX_NONE, this);
+				AbilitySpec->InputPressed = true;
+				UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to true for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
 
-				GiveAbility(AbilitySpec);
-			}
-		}
-
-		// Apply Gameplay Effects if the array isn't empty.
-		if (!AbilitySystemInitializationData.GameplayEffects.IsEmpty())
-		{
-			for (const TSubclassOf<UGameplayEffect>& GameplayEffect : AbilitySystemInitializationData.GameplayEffects)
-			{
-				if (IsValid(GameplayEffect))
+				if (AbilitySpec->IsActive())
 				{
-					FGameplayEffectContextHandle EffectContextHandle = MakeEffectContext();
-					EffectContextHandle.AddSourceObject(this);
+					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputPressed"), *AbilitySpec->Handle.ToString());
+					AbilitySpecInputPressed(*AbilitySpec);
+				}
+				else
+				{
+					const URuinGameplayAbility* RuinAbilityCDO = Cast<URuinGameplayAbility>(AbilitySpec->Ability);
 
-					if (FGameplayEffectSpecHandle GameplayEffectSpecHandle = MakeOutgoingSpec(GameplayEffect, 1, EffectContextHandle); GameplayEffectSpecHandle.IsValid())
+					if (RuinAbilityCDO && RuinAbilityCDO->GetActivationPolicy() == ERuinAbilityActivationPolicy::OnInputTriggered)
 					{
-						ApplyGameplayEffectSpecToTarget(*GameplayEffectSpecHandle.Data.Get(), this);
+						UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate (OnInputTriggered)"), *AbilitySpec->Handle.ToString());
+						AbilitiesToActivate.AddUnique(AbilitySpec->Handle);
 					}
 				}
 			}
 		}
 	}
 
-	// Apply the Gameplay Tag container as loose Gameplay Tags. (These are not replicated by default and should be applied on both server and client respectively.)
-	if (!AbilitySystemInitializationData.GameplayTags.IsEmpty())
+	for (const FGameplayAbilitySpecHandle& AbilitySpecHandle : AbilitiesToActivate)
 	{
-		AddLooseGameplayTags(AbilitySystemInitializationData.GameplayTags);
+		UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Trying to activate ability with AbilitySpecHandle: %s"), *AbilitySpecHandle.ToString());
+		TryActivateAbility(AbilitySpecHandle);
 	}
+
+	for (const FGameplayAbilitySpecHandle& SpecHandle : InputReleasedSpecHandles)
+	{
+		if (FGameplayAbilitySpec* AbilitySpec = FindAbilitySpecFromHandle(SpecHandle))
+		{
+			if (AbilitySpec->Ability)
+			{
+				AbilitySpec->InputPressed = false;
+				UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to false for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
+
+				if (AbilitySpec->IsActive())
+				{
+					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputReleased"), *AbilitySpec->Handle.ToString());
+					AbilitySpecInputReleased(*AbilitySpec);
+				}
+			}
+		}
+	}
+
+	InputPressedSpecHandles.Reset();
+	InputReleasedSpecHandles.Reset();
 }
 
-const UAttributeSet* URuinAbilitySystemComponent::GetOrCreateAttributeSet(const TSubclassOf<UAttributeSet>& InAttributeSet)
+
+void URuinAbilitySystemComponent::ClearAbilityInput()
 {
-	return GetOrCreateAttributeSubobject(InAttributeSet);
+	InputPressedSpecHandles.Reset();
+	InputReleasedSpecHandles.Reset();
+	InputHeldSpecHandles.Reset();
 }
 
-void URuinAbilitySystemComponent::InitAbilityActorInfo(AActor* InOwnerActor, AActor* InAvatarActor)
+void URuinAbilitySystemComponent::BeginPlay()
 {
-	Super::InitAbilityActorInfo(InOwnerActor, InAvatarActor);
-	InitializeAbilitySystemData(InOwnerActor, InAvatarActor);
+	Super::BeginPlay();
+	GrantStartupEffects();
 }

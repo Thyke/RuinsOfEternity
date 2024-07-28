@@ -20,4 +20,7 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Ruin|Utility", Meta = (AutoCreateRefTerm = "Tag", ReturnDisplayName = "Tag Name"))
 	static FName GetSimpleTagName(const FGameplayTag& Tag);
 
+	UFUNCTION(BlueprintPure, Category = "Ruin|Components", Meta = (BlueprintThreadSafe))
+	static URuinAbilitySystemComponent* GetRuinAbilitySystemComponent(const AActor* Actor);
+
 };
