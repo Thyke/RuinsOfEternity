@@ -6,12 +6,26 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystem/RuinAbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-UJumpAbility::UJumpAbility()
+
+UJumpAbility::UJumpAbility(const FObjectInitializer& ObjectInitializer)
+    : Super(ObjectInitializer)
 {
-	ActivationGroup = ERuinAbilityActivationGroup::Independent;
-	ActivationPolicy = ERuinAbilityActivationPolicy::WhileInputActive;
-	AbilityTags.AddTag(RuinGameplayTags::Ability_Type_Action_Jump);
-	ActivationOwnedTags.AddTag(RuinGameplayTags::Event_Ability_Jump);
+    InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
+
+    ActivationGroup = ERuinAbilityActivationGroup::Independent;
+    ActivationPolicy = ERuinAbilityActivationPolicy::WhileInputActive;
+    AbilityTags.AddTag(RuinGameplayTags::Ability_Type_Action_Jump);
+    ActivationOwnedTags.AddTag(RuinGameplayTags::Event_Ability_Jump);
+    ActivationBlockedTags.AddTag(RuinGameplayTags::Movement_Mode_Falling);
+    ActivationBlockedTags.AddTag(RuinGameplayTags::Movement_Mode_Flying);
+
+    if (HasAnyFlags(RF_ClassDefaultObject))
+    {
+        FAbilityTriggerData TriggerData;
+        TriggerData.TriggerTag = RuinGameplayTags::GameplayEvent_OnJumped;
+        TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
+        AbilityTriggers.Add(TriggerData);
+    }
 }
 
 void UJumpAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -25,11 +39,12 @@ void UJumpAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
         {
             Character->Jump();
 
-            // Gameplay Event'i bekle
+            // Trigger gameplay event
             UAbilityTask_WaitGameplayEvent* WaitGameplayEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, FGameplayTag::RequestGameplayTag(FName("GameplayEvent.OnLanded")), nullptr, true);
             if (WaitGameplayEventTask)
             {
                 WaitGameplayEventTask->EventReceived.AddDynamic(this, &UJumpAbility::OnLanded);
+                WaitGameplayEventTask->OnlyTriggerOnce = true;
                 WaitGameplayEventTask->ReadyForActivation();
             }
         }
@@ -45,7 +60,7 @@ void UJumpAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 }
 void UJumpAbility::OnLanded(FGameplayEventData Payload)
 {
-    // Yeteneği sonlandır
+    // End ability
     EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
@@ -53,7 +68,7 @@ void UJumpAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 {
     Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 
-    // Yeteneğin sonlandığını logla
+    // End ability logging
     FString AbilityName = GetName();
     FString EndType = bWasCancelled ? "Cancelled" : "Ended";
     UE_LOG(LogTemp, Warning, TEXT("Ability %s: %s"), *AbilityName, *EndType);

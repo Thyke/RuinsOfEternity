@@ -78,8 +78,21 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Ruin|Attributes")
 	TArray<FRuinAttributeSetDefinition> GrantedAttributes;
 
+public:
+
+	bool IsAbilityActive(const FGameplayTagContainer* WithTags, const FGameplayTagContainer* WithoutTags, UGameplayAbility* Ignore);
+
+	bool IsAbilityActive(const FGameplayAbilitySpecHandle& InHandle);
+
+	bool IsAbilityActive(TSubclassOf<URuinGameplayAbility> AbilityClass, UObject* SourceObject);
+
 protected:
 	virtual void BeginPlay() override;
+
+
+
+	FGameplayAbilitySpec* FindAbilitySpecFromTag(FGameplayTag Tag);
+	FGameplayAbilitySpec* FindAbilitySpecByClassAndSource(TSubclassOf<UGameplayAbility> AbilityClass, UObject* SourceObject);
 
 	// Handles to abilities that had their input pressed this frame.
 	TArray<FGameplayAbilitySpecHandle> InputPressedSpecHandles;

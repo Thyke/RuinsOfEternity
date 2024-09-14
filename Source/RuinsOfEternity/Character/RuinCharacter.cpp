@@ -9,7 +9,8 @@
 #include "AbilitySystem/RuinAbilitySystemComponent.h"
 #include "AbilitySystem/Attributes/RuinAttributeSet.h"
 #include "RuinGameplayTags.h"
-
+#include "AbilitySystemBlueprintLibrary.h"
+#include "AbilitySystem/Abilities/JumpAbility.h"
 ARuinCharacter::ARuinCharacter(const FObjectInitializer& ObjectInitializer) : Super{
 	ObjectInitializer.SetDefaultSubobjectClass<URuinCharacterMovementComponent>(CharacterMovementComponentName)
 }
@@ -63,6 +64,33 @@ void ARuinCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+}
+
+void ARuinCharacter::Landed(const FHitResult& Hit)
+{
+	if (URuinAbilitySystemComponent* RuinASC = Cast<URuinAbilitySystemComponent>(AbilitySystemComponent))
+	{
+		GetWorld()->GetTimerManager().SetTimerForNextTick([this, RuinASC, Hit]()
+			{
+				if (RuinASC->IsAbilityActive(UJumpAbility::StaticClass(), nullptr))
+				{
+					FGameplayTag LandedTag = RuinGameplayTags::GameplayEvent_OnLanded;
+					FGameplayEventData EventData;
+					EventData.EventTag = LandedTag;
+					EventData.Instigator = this;
+					EventData.Target = this;
+					FGameplayEffectContextHandle EffectContext = RuinASC->MakeEffectContext();
+					EffectContext.AddHitResult(Hit);
+					EventData.ContextHandle = EffectContext;
+					UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, LandedTag, EventData);
+					UE_LOG(LogTemp, Log, TEXT("Gameplay Event Sent - Tag: %s, Instigator: %s, Target: %s"),
+						*LandedTag.ToString(),
+						*GetNameSafe(EventData.Instigator),
+						*GetNameSafe(EventData.Target));
+				}
+			});
+	}
+	Super::Landed(Hit);
 }
 
 void ARuinCharacter::PostInitializeComponents()

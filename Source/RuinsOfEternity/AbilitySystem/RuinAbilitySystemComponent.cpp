@@ -134,7 +134,7 @@ void URuinAbilitySystemComponent::GrantStartupEffects()
 
 void URuinAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& InputTag)
 {
-	UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed called with InputTag: %s"), *InputTag.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed called with InputTag: %s"), *InputTag.ToString());
 
 	if (InputTag.IsValid())
 	{
@@ -142,7 +142,7 @@ void URuinAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& Inp
 		{
 			if (AbilitySpec.Ability && AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
 			{
-				UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("AbilityInputTagPressed: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
 				InputPressedSpecHandles.AddUnique(AbilitySpec.Handle);
 				InputHeldSpecHandles.AddUnique(AbilitySpec.Handle);
 			}
@@ -152,7 +152,7 @@ void URuinAbilitySystemComponent::AbilityInputTagPressed(const FGameplayTag& Inp
 
 void URuinAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& InputTag)
 {
-	UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased called with InputTag: %s"), *InputTag.ToString());
+	//UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased called with InputTag: %s"), *InputTag.ToString());
 
 	if (InputTag.IsValid())
 	{
@@ -160,7 +160,7 @@ void URuinAbilitySystemComponent::AbilityInputTagReleased(const FGameplayTag& In
 		{
 			if (AbilitySpec.Ability && AbilitySpec.DynamicAbilityTags.HasTagExact(InputTag))
 			{
-				UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("AbilityInputTagReleased: Adding AbilitySpec.Handle: %s"), *AbilitySpec.Handle.ToString());
 				InputReleasedSpecHandles.AddUnique(AbilitySpec.Handle);
 				InputHeldSpecHandles.Remove(AbilitySpec.Handle);
 			}
@@ -184,7 +184,7 @@ void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGam
 				const URuinGameplayAbility* RuinAbilityCDO = Cast<URuinGameplayAbility>(AbilitySpec->Ability);
 				if (RuinAbilityCDO && RuinAbilityCDO->GetActivationPolicy() == ERuinAbilityActivationPolicy::WhileInputActive)
 				{
-					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate"), *AbilitySpec->Handle.ToString());
+					//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate"), *AbilitySpec->Handle.ToString());
 					AbilitiesToActivate.AddUnique(AbilitySpec->Handle);
 				}
 			}
@@ -198,11 +198,11 @@ void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGam
 			if (AbilitySpec->Ability)
 			{
 				AbilitySpec->InputPressed = true;
-				UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to true for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to true for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
 
 				if (AbilitySpec->IsActive())
 				{
-					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputPressed"), *AbilitySpec->Handle.ToString());
+					//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputPressed"), *AbilitySpec->Handle.ToString());
 					AbilitySpecInputPressed(*AbilitySpec);
 				}
 				else
@@ -211,7 +211,7 @@ void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGam
 
 					if (RuinAbilityCDO && RuinAbilityCDO->GetActivationPolicy() == ERuinAbilityActivationPolicy::OnInputTriggered)
 					{
-						UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate (OnInputTriggered)"), *AbilitySpec->Handle.ToString());
+						//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Adding AbilitySpec.Handle: %s to AbilitiesToActivate (OnInputTriggered)"), *AbilitySpec->Handle.ToString());
 						AbilitiesToActivate.AddUnique(AbilitySpec->Handle);
 					}
 				}
@@ -221,7 +221,7 @@ void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGam
 
 	for (const FGameplayAbilitySpecHandle& AbilitySpecHandle : AbilitiesToActivate)
 	{
-		UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Trying to activate ability with AbilitySpecHandle: %s"), *AbilitySpecHandle.ToString());
+		//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: Trying to activate ability with AbilitySpecHandle: %s"), *AbilitySpecHandle.ToString());
 		TryActivateAbility(AbilitySpecHandle);
 	}
 
@@ -232,11 +232,11 @@ void URuinAbilitySystemComponent::ProcessAbilityInput(float DeltaTime, bool bGam
 			if (AbilitySpec->Ability)
 			{
 				AbilitySpec->InputPressed = false;
-				UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to false for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
+				//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.InputPressed set to false for AbilitySpec.Handle: %s"), *AbilitySpec->Handle.ToString());
 
 				if (AbilitySpec->IsActive())
 				{
-					UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputReleased"), *AbilitySpec->Handle.ToString());
+					//UE_LOG(LogTemp, Log, TEXT("ProcessAbilityInput: AbilitySpec.Handle: %s is active, calling AbilitySpecInputReleased"), *AbilitySpec->Handle.ToString());
 					AbilitySpecInputReleased(*AbilitySpec);
 				}
 			}
@@ -259,4 +259,80 @@ void URuinAbilitySystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	GrantStartupEffects();
+}
+
+bool URuinAbilitySystemComponent::IsAbilityActive(const FGameplayTagContainer* WithTags, const FGameplayTagContainer* WithoutTags, UGameplayAbility* Ignore)
+{
+	ABILITYLIST_SCOPE_LOCK();
+
+	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
+	{
+		if (!Spec.IsActive() || Spec.Ability == nullptr || Spec.Ability == Ignore)
+		{
+			continue;
+		}
+
+		const bool WithTagPass = (!WithTags || Spec.Ability->AbilityTags.HasAny(*WithTags));
+		const bool WithoutTagPass = (!WithoutTags || !Spec.Ability->AbilityTags.HasAny(*WithoutTags));
+
+		if (WithTagPass && WithoutTagPass)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool URuinAbilitySystemComponent::IsAbilityActive(const FGameplayAbilitySpecHandle& InHandle)
+{
+	ABILITYLIST_SCOPE_LOCK();
+	FGameplayAbilitySpec* Spec = FindAbilitySpecFromHandle(InHandle);
+	return Spec ? Spec->IsActive() : false;
+}
+
+bool URuinAbilitySystemComponent::IsAbilityActive(TSubclassOf<URuinGameplayAbility> AbilityClass, UObject* SourceObject)
+{
+	ABILITYLIST_SCOPE_LOCK();
+
+	FGameplayAbilitySpec* Spec;
+
+	if (SourceObject)
+	{
+		Spec = FindAbilitySpecByClassAndSource(AbilityClass, SourceObject);
+	}
+	else
+	{
+		Spec = FindAbilitySpecFromClass(AbilityClass);
+	}
+
+	if (Spec)
+	{
+		return Spec->IsActive();
+	}
+	return false;
+}
+
+FGameplayAbilitySpec* URuinAbilitySystemComponent::FindAbilitySpecFromTag(FGameplayTag Tag)
+{
+	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
+	{
+		if (Spec.Ability->AbilityTags.HasTagExact(Tag))
+		{
+			return &Spec;
+		}
+	}
+
+	return nullptr;
+}
+
+FGameplayAbilitySpec* URuinAbilitySystemComponent::FindAbilitySpecByClassAndSource(TSubclassOf<UGameplayAbility> AbilityClass, UObject* SourceObject)
+{
+	for (FGameplayAbilitySpec& Spec : ActivatableAbilities.Items)
+	{
+		if (Spec.Ability->GetClass() == AbilityClass && Spec.SourceObject == SourceObject)
+		{
+			return &Spec;
+		}
+	}
+	return nullptr;
 }

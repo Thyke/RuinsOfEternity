@@ -19,8 +19,4 @@ public:
 	TObjectPtr<class URuinHeroComponent> HeroComponent;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	virtual void Landed(const FHitResult& Hit) override;
-
-	void NextTickLandedEvent(FHitResult Hit);
 };

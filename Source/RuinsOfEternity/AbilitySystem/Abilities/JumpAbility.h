@@ -15,7 +15,7 @@ class RUINSOFETERNITY_API UJumpAbility : public URuinGameplayAbility
 	GENERATED_BODY()
 	
 public:
-	UJumpAbility();
+	UJumpAbility(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	UFUNCTION()
